@@ -147,4 +147,22 @@ router.delete('/tasks/:id', auth, async (req, res) => {
     }
 })
 
+// Delete image from a task:
+router.delete('/tasks/:id/image', auth, async (req, res) => {
+    try {
+        
+        const task = await Task.findById(req.params.id)
+        
+        if (!task || task.image === null) {
+            return res.status(404).send()
+        }
+
+        task.image = null
+        await task.save()
+        res.send()
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
 module.exports = router
