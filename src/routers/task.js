@@ -21,24 +21,22 @@ const upload = multer({
 })
 
 
-router.post('/tasks', auth, upload.single('image'), async (req, res) => {
+// Create task
+router.post('/tasks', auth, async (req, res) => {
     try {
-
         const task = new Task({
-            ...JSON.parse(req.body.task),
+            ...req.body,
             owner: req.user._id
         })
-
-        if (req.file) {
-            task.image = await sharp(req.file.buffer).png().toBuffer()
-        }
-
+    
         await task.save()
         res.status(201).send(task)
     } catch (e) {
         res.status(400).send(e)
     }
+    
 })
+
 
 //  GET /tasks?completed=false  --> FILTERING DATA
 //  GET /tasks?limit=10&skip=0  --> PAGINATING DATA
@@ -90,6 +88,65 @@ router.get('/tasks/:id', auth, async (req, res) => {
 })
 
 
+// Update task
+router.patch('/tasks/:id', auth, async (req, res) => {
+    const updates = Object.keys(req.body)
+
+    const allowedUpdates = ['description', 'completed']
+    const isValidOperation = updates.every(update => allowedUpdates.includes(update))
+
+    if (!isValidOperation) {
+        return res.status(400).send({ error: 'Invalid updates!' })
+    }
+
+    try {
+        const task = await Task.findOne({ _id: req.params.id, owner: req.user._id }) // mongoose automatically converts the string ids into ObjectIDs for us
+
+        if (!task) {
+            return res.status(404).send()
+        }
+    
+        updates.forEach(update => task[update] = req.body[update])
+    
+        await task.save()
+        res.send(task)
+    } catch (e) {
+        res.status(400).send()
+    }
+        
+})
+
+router.delete('/tasks/:id', auth, async (req, res) => {
+    try {
+        const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id })
+
+        if (!task) {
+            return res.status(404).send()
+        }
+
+        res.send(task)
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+// CRUD ENDPOINTS TO UPLOAD FILES
+
+// Create and update:
+router.post('/tasks/:id/image', auth, upload.single('image'), async (req, res) => {
+    const task = await Task.findById(req.params.id)
+
+    if (!task) return res.status(404).send()
+
+    const buffer = await sharp(req.file.buffer).png().toBuffer()
+    task.image = buffer
+    await task.save()
+    res.send()
+}, (error, req, res, next) => { // must put those 4 arguments so Express knows that this function is designed for handling errors
+    res.status(400).send({ error: error.message })
+})
+
+
 // Read task image from the browser:
 router.get('/tasks/:id/image', async (req, res) => {
     try {
@@ -107,62 +164,23 @@ router.get('/tasks/:id/image', async (req, res) => {
 })
 
 
-router.patch('/tasks/:id', auth, async (req, res) => {
-    const updates = Object.keys(req.body)
-    const allowedUpdates = ['description', 'completed']
-    const isValidOperation = updates.every(update => allowedUpdates.includes(update))
-
-    if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid updates!' })
-    }
-
-    try {
-        const task = await Task.findOne({ _id: req.params.id, owner: req.user._id }) // mongoose automatically converts the string ids into ObjectIDs for us
-
-        if (!task) {
-            return res.status(404).send()
-        }
-
-        updates.forEach(update => task[update] = req.body[update])
-
-        await task.save()
-        res.send(task)
-    } catch (e) {
-        res.status(400).send(e)
-    }
-
-})
-
-router.delete('/tasks/:id', auth, async (req, res) => {
-    try {
-        const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id })
-
-        if (!task) {
-            return res.status(404).send()
-        }
-
-        res.send(task)
-    } catch (e) {
-        res.status(500).send()
-    }
-})
-
 // Delete image from a task:
 router.delete('/tasks/:id/image', auth, async (req, res) => {
     try {
-        
+
         const task = await Task.findById(req.params.id)
-        
-        if (!task || task.image === null) {
+
+        if (!task || task.image === undefined) {
             return res.status(404).send()
         }
 
-        task.image = null
+        task.image = undefined
         await task.save()
         res.send()
     } catch (e) {
         res.status(500).send()
     }
 })
+
 
 module.exports = router
