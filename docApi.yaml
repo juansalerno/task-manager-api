@@ -9,10 +9,10 @@ info:
   termsOfService: 'http://swagger.io/terms/'
 servers:
 # Added by API Auto Mocking Plugin
-  - description: Development Environment
-    url: 'http://localhost:3000'
   - description: Production Environment  
     url: 'https://salerno-task-manager.herokuapp.com'
+  - description: Development Environment
+    url: 'http://localhost:3000'
 tags: 
   - name: users
     description: Endpoints related with users
