@@ -1,0 +1,676 @@
+openapi: 3.0.0
+info:
+  description: |
+    This is the Task Manager API Server Documentation. Whit this API you can create and delete users and their corresponding tasks.
+    This API support image upload for the users and tasks and 
+    works with authentication, so a user can also login and logout.
+  version: "1.0.0"
+  title: Task Manager API
+  termsOfService: 'http://swagger.io/terms/'
+servers:
+# Added by API Auto Mocking Plugin
+  - description: Development Environment
+    url: 'http://localhost:3000'
+  - description: Production Environment  
+    url: 'https://salerno-task-manager.herokuapp.com'
+tags: 
+  - name: users
+    description: Endpoints related with users
+  - name: users-images
+    description: Endpoints for upload user's profile image
+  - name: tasks
+    description: Endpoints related with tasks
+  - name: tasks-images
+    description: Endpoints for upload a task's image
+    
+paths:
+  /users:
+    post:
+      tags:
+        - users
+      summary: Create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: 'José Perez'
+                password:
+                  type: string
+                  format: password
+                  example: 'RedExp567!'
+                email:
+                  type: string
+                  format: email
+                  example: 'example@gmail.com'
+                age:
+                  type: number
+                  example: 27
+              required:
+                - name
+                - password
+                - email
+        description: User body 
+        required: true
+      responses:
+          '201':
+            description: User created and stored in databse
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respUser'
+          '400':
+            description: Bad request
+          '500':
+            $ref: '#/components/responses/serverError'    
+  /users/login:
+    post:
+      tags:
+        - users
+      summary: Login a user when provide the correct credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'example@gmail.com'
+                password:
+                  type: string
+                  format: password
+                  example: 'RedExp567!'
+              required:
+                - email
+                - password         
+      responses:
+          '200':
+            description: Login successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respUser'
+          '400':
+            description: Bad request
+          '500':
+            $ref: '#/components/responses/serverError'      
+  /users/logout:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - users
+      summary: Logs out a user
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      responses:
+        '200':
+          description: Logged out
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError' 
+  /users/logoutAll:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - users
+      summary: Logs out all user's accounts  
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      responses:
+        '200':
+          description: Logged out in all accounts
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+  /users/me:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - users
+      summary: Read user's profile data 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      responses:
+        '200':
+          description: Data from an authenticated user
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respUser/properties/user'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+    patch:
+      security:
+        - bearerAuth: []
+      tags:
+        - users
+      summary: Update user's data  
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  type: string
+                  example: 'José Perez'
+                password:
+                  type: string
+                  format: password
+                  example: 'RedExp567!'
+                email:
+                  type: string
+                  format: email
+                  example: 'example@gmail.com'
+                age:
+                  type: number
+                  example: 27
+        required: true
+      responses:
+        '200':
+          description: User's data updated
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respUser/properties/user'
+        '400':
+          description: Invalid updates
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - users
+      summary: Delete user's account 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      responses:
+        '200':
+          description: User's account deleted
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respUser/properties/user'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+  /users/me/avatar:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - users-images
+      summary: Upload an user's image 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+        description: The file must be an image (.jpg, .jpeg, .png)
+        required: true
+      responses:
+        '200':
+          description: Image uploaded
+        '400':
+          description: Bad request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - users-images
+      summary: Delete an user's image  
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      responses:
+        '200':
+          description: Image deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+  /users/{id}/avatar:
+    get:
+      tags:
+        - users-images
+      summary: Get an user's image by id
+      parameters:
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The user ID 
+      responses:
+        '200':
+          description: Logo image in PNG format
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not found
+        '500':
+          $ref: '#/components/responses/serverError'
+  /tasks:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks
+      summary: Create a task for an authenticated user
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: 'Doing something'
+                completed:
+                  type: boolean
+                  default: false
+                  example: 'true'
+              required:
+                - description         
+        description: Task body
+        required: true
+      responses:
+          '201':
+            description: Tasks created and stored in databse
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respTask'
+          '400':
+            description: Bad request
+          '500':
+            $ref: '#/components/responses/serverError'
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks
+      summary: Get authenticated user's tasks, with filterin, pagination and sorting 
+      parameters:
+        - in: query
+          name: completed
+          schema:
+            type: boolean
+          description: Filtering for completed or incompleted tasks
+          example: 'completed=true'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Limit of tasks per page
+          example: 'limit=2'
+        - in: query
+          name: skip
+          schema:
+            type: integer
+          description: Number of skipped tasks
+          example: 'skip=0' 
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: Sorting the tasks in a ascending or descending way by creation or modification date
+          example: 'sortBy=createdAt:desc' 
+      responses:
+          '200':
+            description: Array of user's tasks
+            content:
+              application/json:
+                schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/respTask'
+          '500':
+            $ref: '#/components/responses/serverError'
+  /tasks/{id}:          
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks
+      summary: Get an user's task by id
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The task ID 
+      responses:
+        '200':
+            description: Task description
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respTask'
+        '404':
+          description: Not found
+        '500':
+          $ref: '#/components/responses/serverError'
+    patch:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks
+      summary: Update an authenticated user's task by id 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: 'Doing something else'
+                completed:
+                  type: boolean
+                  default: false
+                  example: 'true'         
+        description: Update task's properties
+        required: true
+      responses:
+          '200':
+            description: Tasks updated and stored in databse
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respTask'
+          '400':
+            description: Bad request
+          '500':
+            $ref: '#/components/responses/serverError'  
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks
+      summary: Delete an authenticated user's task by id
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The task ID 
+      responses:
+        '200':
+            description: Task deleted
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/respTask'
+        '404':
+          description: Not found
+        '500':
+          $ref: '#/components/responses/serverError'           
+  /tasks/{id}/image:
+    get:
+      tags:
+        - tasks-images
+      summary: Get an task's image by id
+      parameters:
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The task ID 
+      responses:
+        '200':
+          description: Task's image in PNG format
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not found
+        '500':
+          $ref: '#/components/responses/serverError' 
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks-images
+      summary: Upload an image for a user's task 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The task ID
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+        description: The file must be an image (.jpg, .jpeg, .png)
+        required: true
+      responses:
+        '200':
+          description: Image uploaded
+        '400':
+          description: Bad request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - tasks-images
+      summary: Delete an image for a user's task 
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            format: JWT
+          required: true
+        - in: path
+          name: id  
+          required: true
+          schema:
+            type: string
+            minimum: 1
+          description: The task ID
+      responses:
+        '200':
+          description: Image deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/serverError'      
+          
+components:
+  securitySchemes:
+      bearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
+  schemas:
+    respUser:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:   
+            _id:
+              type: string
+              example: 'ihsSsdjhls31373873ddasd357'
+            name:
+              type: string
+              example: 'José Perez'
+            email:
+              type: string
+              format: email
+              example: 'example@gmail.com'
+            age:
+              type: number
+              example: 27
+            createdAt:
+              type: string
+              format: date-time
+              example: '2019-07-21T17:32:28Z'
+            updatedAt:
+              type: string
+              format: date-time
+              example: '2020-07-21T17:32:28Z'
+          required:
+            - _id
+            - name
+            - email
+            - age
+            - createdAt
+            - updatedAt
+        tokens: 
+          type: array
+          items: 
+            type: object
+            properties:
+              token:
+                type: string
+                example: 'ihsSsdjhls31373873ddasd357.321354341fghdfhdfh.514sdgsdgsdf4g3sdfg543'
+    respTask:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 'ihsSsdjhls31373873ddasd357'
+        description:
+          type: string
+          example: 'Doing something'
+        completed:
+          type: boolean
+          example: 'true'
+        owner:
+          type: string
+          example: 'fd35435dfadf35435daf'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2019-07-21T17:32:28Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2020-07-21T17:32:28Z'
+  responses:
+    UnauthorizedError:
+      description: Please authenticate
+    serverError:
+      description: Internal server error
+    
+

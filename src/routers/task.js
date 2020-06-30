@@ -22,7 +22,7 @@ const upload = multer({
 
 
 // Create task
-router.post('/tasks', auth, async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         const task = new Task({
             ...req.body,
@@ -41,7 +41,7 @@ router.post('/tasks', auth, async (req, res) => {
 //  GET /tasks?completed=false  --> FILTERING DATA
 //  GET /tasks?limit=10&skip=0  --> PAGINATING DATA
 //  GET /tasks?sortBy=createdAt:desc --> SORTING DATA
-router.get('/tasks', auth, async (req, res) => {
+router.get('/', auth, async (req, res) => {
     const match = {}
     const sort = {}
 
@@ -71,7 +71,7 @@ router.get('/tasks', auth, async (req, res) => {
 })
 
 
-router.get('/tasks/:id', auth, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     const _id = req.params.id
 
     try {
@@ -89,7 +89,7 @@ router.get('/tasks/:id', auth, async (req, res) => {
 
 
 // Update task
-router.patch('/tasks/:id', auth, async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body)
 
     const allowedUpdates = ['description', 'completed']
@@ -116,7 +116,7 @@ router.patch('/tasks/:id', auth, async (req, res) => {
         
 })
 
-router.delete('/tasks/:id', auth, async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id })
 
@@ -133,7 +133,7 @@ router.delete('/tasks/:id', auth, async (req, res) => {
 // CRUD ENDPOINTS TO UPLOAD FILES
 
 // Create and update:
-router.post('/tasks/:id/image', auth, upload.single('image'), async (req, res) => {
+router.post('/:id/image', auth, upload.single('image'), async (req, res) => {
     const task = await Task.findById(req.params.id)
 
     if (!task) return res.status(404).send()
@@ -148,7 +148,7 @@ router.post('/tasks/:id/image', auth, upload.single('image'), async (req, res) =
 
 
 // Read task image from the browser:
-router.get('/tasks/:id/image', async (req, res) => {
+router.get('/:id/image', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id)
 
@@ -165,7 +165,7 @@ router.get('/tasks/:id/image', async (req, res) => {
 
 
 // Delete image from a task:
-router.delete('/tasks/:id/image', auth, async (req, res) => {
+router.delete('/:id/image', auth, async (req, res) => {
     try {
 
         const task = await Task.findById(req.params.id)
